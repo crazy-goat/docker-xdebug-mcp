@@ -9,6 +9,8 @@
     </marker>
   </defs>
 
+  <rect x="0" y="0" width="1340" height="790" fill="#FFFFFF"/>
+
   <!-- Title -->
   <text x="670" y="34" text-anchor="middle" font-weight="700" font-size="18" fill="#1A1A1A">xdbg — overview</text>
 
