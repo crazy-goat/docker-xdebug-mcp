@@ -170,22 +170,162 @@ Keep port 9003 free — don't run alongside `socat` or PhpStorm's IDE listener.
 
 ## Tools (`xdbg_*`)
 
-| Tool | Args |
-|---|---|
-| `xdbg_status` | — |
-| `xdbg_set_breakpoint` | `file` (HOST path, auto-translated), `line` |
-| `xdbg_breakpoint_list` / `_remove` / `_clear` | — / `id` / — |
-| `xdbg_request` | `url`, `method`?, `headers`?, `body`?, `timeoutMs`? |
-| `xdbg_request_files` | `url`, `method`?, `headers_file`, `body_file`, `timeoutMs`? (secrets stay on disk) |
-| `xdbg_listen` | `timeoutMs`? (wait for next CLI/command session) |
-| `xdbg_run_command` | `command`, `timeoutMs`? (run inside the container) |
-| `xdbg_run` / `_step_into` / `_step_over` / `_step_out` / `_pause` | — |
-| `xdbg_stack` | — |
-| `xdbg_context` | `stackDepth`? |
-| `xdbg_eval` | `expression` |
-| `xdbg_property_get` / `_set` | `name`(,`stackDepth`) / `name`,`value` |
-| `xdbg_detach` / `_stop` | — |
-| `xdbg_container_status` / `_enable` / `_disable` | — (when configured) |
+### `xdbg_status`
+No arguments. Returns the current debugger state (`no session`, `started`,
+`break`, `stopping`), the file and line where execution is paused (or `-` when
+not paused), and the number of queued breakpoints. Use it as the first call
+after firing a request or running a command to see whether the session was
+adopted and where the engine stopped. It's safe to call any time, with or
+without an active session. It does not advance execution or mutate state.
+
+### `xdbg_set_breakpoint`
+Args: `file` (host path, absolute or project-relative — auto-translated to the
+container path), `line` (1-based). Sets a line breakpoint. If a session is
+already active, the breakpoint is applied immediately and its engine-assigned
+id is returned. If no session is active, the breakpoint is queued and applied
+automatically on the next session (the next `xdbg_request` or
+`xdbg_run_command`). Multiple breakpoints can be set before triggering the
+request; all of them are applied when the engine connects.
+
+### `xdbg_breakpoint_list`
+No arguments. Lists all breakpoints known to the engine, with their ids,
+state (`enabled`/`disabled`), file (translated back to a host path) and line.
+When no session is active, lists the queued breakpoints instead. Use it to
+verify what's armed before firing a request. Safe to call any time.
+
+### `xdbg_breakpoint_remove`
+Args: `id` (the breakpoint id returned by `xdbg_set_breakpoint` or shown by
+`xdbg_breakpoint_list`). Removes a single breakpoint — both from the engine
+(if a session is active) and from the local queue. Returns `removed <id>` on
+success. Call `xdbg_breakpoint_list` first to find the id.
+
+### `xdbg_breakpoint_clear`
+No arguments. Removes every breakpoint: queued (not yet applied) and applied
+(active in the engine). Safe to call with or without an active session. Use
+it to reset state between debugging scenarios. Returns the number of
+breakpoints cleared.
+
+### `xdbg_request`
+Args: `url` (required), `method` (default `GET`), `headers` (object of
+string→string), `body` (raw string), `timeoutMs` (default 15000). Fires an
+HTTP request at the app with full control over method, headers, and body.
+Because the container has `xdebug.start_with_request=yes`, the request makes
+php-fpm dial the DBGp port; xdbg adopts the connection, applies queued
+breakpoints, and pauses at the first break. When no breakpoints are set, the
+script runs to completion and the request returns. To debug interactively,
+set breakpoints first, then call `xdbg_request` — the tool returns once the
+session is paused, and you drive it with `xdbg_run` / `xdbg_step_*` / etc.
+
+### `xdbg_request_files`
+Args: `url` (required), `method`, `headers_file` (path to a file with
+`Name: Value` lines, blank lines and `#` comments ignored — or a JSON object),
+`body_file` (path to raw body bytes), `timeoutMs`. Like `xdbg_request` but
+reads headers and body from disk. Use it when headers contain sensitive
+values (JWT tokens, cookies, API keys) that should not appear inline in the
+chat or tool arguments. The files are read once, at call time.
+
+### `xdbg_listen`
+Args: `timeoutMs` (default 30000). Arms the DBGp listener and blocks until
+the next engine connection is adopted, then returns. Use it for CLI / Symfony
+command debugging: call `xdbg_listen` first, then launch the command
+separately (e.g. `docker compose exec -T php php bin/console app:cmd`). Once
+the tool returns, the session is paused at the script start with breakpoints
+applied — drive it with `xdbg_run` / `xdbg_step_*` / etc. If no engine
+connects within the timeout, returns an error.
+
+### `xdbg_run_command`
+Args: `command` (required, e.g. `"bin/console app:my-command --option=value"`),
+`timeoutMs` (default 30000). Runs the command inside the container (prefixed
+with `--container-exec`) and waits for the resulting Xdebug connection. When
+no breakpoints are set, the script runs to completion and the command output
+is returned. When breakpoints are set, the session pauses at the first break
+and the caller drives it with `xdbg_run` / `xdbg_step_*` — the command output
+is not available until the script finishes. This is the CLI equivalent of
+`xdbg_request`.
+
+### `xdbg_run`
+No arguments. Resumes execution after a break — the engine runs until the
+next breakpoint or until the script finishes. Returns the new state
+(`break`/`stopping`) and the current location. When the script finishes, the
+state becomes `stopping` and the response notes `(script finished)`. Call it
+repeatedly to step through breakpoints.
+
+### `xdbg_step_into`
+No arguments. Steps into the next line — if the next line is a function call,
+execution pauses at the first line inside the called function. Returns the
+new state and location. Use it to follow execution into callees. When there's
+nothing to step into, behaves like `xdbg_step_over`.
+
+### `xdbg_step_over`
+No arguments. Steps over the next line — if the line is a function call, the
+function runs to completion and execution pauses on the next line of the
+caller. Returns the new state and location. Use it to advance without
+descending into callees.
+
+### `xdbg_step_out`
+No arguments. Steps out of the current function — execution runs until the
+current function returns, then pauses at the caller. Returns the new state
+and location. Use it to escape a function you stepped into by mistake.
+
+### `xdbg_pause`
+No arguments. Breaks (pauses) execution immediately, as if a breakpoint were
+hit at the current line. Returns the new state (`break`) and location. Use it
+to interrupt a long-running `xdbg_run` and regain control. Only meaningful
+while a session is active and running.
+
+### `xdbg_stack`
+No arguments. Returns the call stack at the current pause point, with each
+frame's depth, function name, file (translated to a host path) and line.
+Returns `(no stack — not paused?)` when no session is paused. Use it to
+understand how you got to the current location. Safe to call any time, but
+only meaningful while paused.
+
+### `xdbg_context`
+Args: `stackDepth` (default 0, the top frame). Returns the variables in
+scope at the given stack frame, with their names, types, and a summarized
+value. Use it to inspect the local state at the current pause point. For
+nested values, the summary shows the type and child count (e.g.
+`object {3 children}`) — use `xdbg_property_get` to drill in.
+
+### `xdbg_eval`
+Args: `expression` (a PHP expression, e.g. `$foo->bar()` or
+`count($items)`). Evaluates the expression in the current scope and returns
+the result. Use it to test hypotheses, call methods, inspect computed values,
+or probe framework state. The expression is base64-encoded and sent via the
+DBGp `eval` command. Returns an error if the expression throws.
+
+### `xdbg_property_get`
+Args: `name` (variable name, e.g. `$foo`), `stackDepth` (default 0). Returns
+the value of one variable or property in the given stack frame. Use it to
+drill into a variable you saw in `xdbg_context` — for nested structures, it
+returns the child properties. Returns `(not found)` when the name doesn't
+exist in scope.
+
+### `xdbg_property_set`
+Args: `name` (variable name), `value` (a PHP literal, e.g. `"bar"` or `42`).
+Sets the variable to the given value in the current scope. Use it to test how
+the code behaves with different inputs without editing the source. The value
+is base64-encoded and sent via the DBGp `property_set` command. Returns
+`<name> = <value>` on success.
+
+### `xdbg_detach`
+No arguments. Detaches from the engine: lets the script finish on its own and
+drops the session. The DBGp listener closes, freeing port 9003. Use it when
+you're done debugging but want the request/command to complete normally.
+Returns `detached`.
+
+### `xdbg_stop`
+No arguments. Stops the debugged script immediately — the engine terminates
+the PHP process and the session ends. The listener closes, freeing port
+9003. Use it to abort a stuck request or command. Returns `stopped`.
+
+### `xdbg_container_status` / `_enable` / `_disable`
+No arguments. Available only when the corresponding `--xdebug-*-cmd` flag is
+configured. `_status` runs the status command and returns its output (e.g.
+whether Xdebug is currently on or off). `_enable` / `_disable` run the
+enable/disable commands to toggle Xdebug in the container at runtime, so the
+agent can turn it on for a debug session and off again afterwards without
+shell access.
 
 ## Typical flows
 
