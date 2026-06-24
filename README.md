@@ -20,18 +20,17 @@ stack, variables, eval, stepping. All from the chat.
 PhpStorm ships its own Xdebug MCP tools, but they only fire **GET** requests
 and don't let you set **headers** (cookies, auth tokens, `Content-Type`). For
 real API work — POST/PUT/PATCH with JSON bodies and JWT/auth headers — you end
-up juggling `curl`, `socat`, port forwards, and a second terminal. xdbg closes
-that gap: the same MCP-driven flow, but with full control over method, headers,
-and body, plus CLI/Symfony command debugging and host↔container path
-translation. No PhpStorm, no `socat`.
+up juggling port forwards and a second terminal. xdbg closes that gap: the
+same MCP-driven flow, but with full control over method, headers, and body,
+plus CLI/Symfony command debugging and host↔container path translation.
 
 ## What it solves
 
 | Pain | Before | With xdbg |
 |---|---|---|
-| **AI can't debug POST/PUT/PATCH** | PhpStorm MCP = GET only; fall back to `curl` + `socat` | `docker_xdebug_request` takes `method`, `headers`, `body` |
+| **AI can't debug POST/PUT/PATCH** | PhpStorm MCP = GET only | `xdbg_request` takes `method`, `headers`, `body` |
 | **Auth / cookies / JWT** | Nowhere to put the header | Pass `headers: {"Authorization": "Bearer …"}` (or read from a file to keep secrets out of the chat) |
-| **CLI / Symfony commands** | No MCP path at all | `docker_xdebug_run_command "bin/console app:foo"` pauses at the breakpoint |
+| **CLI / Symfony commands** | No MCP path at all | `xdbg_run_command "bin/console app:foo"` pauses at the breakpoint |
 | **Host ↔ container paths** | Breakpoints need container paths; stacks show container paths | Set breakpoints with host paths; stacks come back as host paths |
 | **Port conflicts** | Two debuggers fight over 9003 | Detects the holder (lsof), waits its turn, tells you who's blocking |
 
@@ -46,7 +45,7 @@ translation. No PhpStorm, no `socat`.
    tool calls. Your agent sets a breakpoint, fires the request, inspects
    variables, steps — all in one conversation.
 
-![architecture](docs/docker-xdebug-mcp-architecture.svg)
+![architecture](docs/xdbg-architecture.svg)
 
 ([source](docs/architecture.puml) — edit with PlantUML)
 
@@ -55,9 +54,9 @@ translation. No PhpStorm, no `socat`.
 ### From source (recommended)
 
 ```bash
-git clone https://github.com/crazy-goat/docker-xdebug-mcp.git
-cd docker-xdebug-mcp
-make install          # builds and copies to ~/.local/bin/docker-xdebug-mcp
+git clone https://github.com/crazy-goat/xdbg.git
+cd xdbg
+make install          # builds and copies to ~/.local/bin/xdbg
 ```
 
 Make sure `~/.local/bin` is on your `PATH`:
@@ -69,14 +68,14 @@ export PATH="$HOME/.local/bin:$PATH"   # add to ~/.zshrc / ~/.bashrc
 Verify:
 
 ```bash
-docker-xdebug-mcp --help
+xdbg --help
 ```
 
 ### Build without installing
 
 ```bash
-make build            # -> ./docker-xdebug-mcp
-./docker-xdebug-mcp --help
+make build            # -> ./xdbg
+./xdbg --help
 ```
 
 ### Prerequisites
@@ -103,7 +102,7 @@ project's `opencode.json`):
       "enabled": true,
       "type": "local",
       "command": [
-        "docker-xdebug-mcp",
+        "xdbg",
         "--dbg-port", "9003",
         "--local-root",  "/Users/you/work/your-app",
         "--docker-root", "/var/www/your-app",
@@ -117,7 +116,7 @@ project's `opencode.json`):
 }
 ```
 
-Restart opencode (or reconnect MCP). Tools appear as `xdbg_docker_xdebug_*`.
+Restart opencode (or reconnect MCP). Tools appear as `xdbg_xdbg_*`.
 
 ### Claude Code (`.mcp.json`)
 
@@ -127,7 +126,7 @@ Drop a `.mcp.json` in your project root (or `~/.claude.json` for global):
 {
   "mcpServers": {
     "xdbg": {
-      "command": "docker-xdebug-mcp",
+      "command": "xdbg",
       "args": [
         "--dbg-port", "9003",
         "--local-root",  "/Users/you/work/your-app",
@@ -141,7 +140,7 @@ Drop a `.mcp.json` in your project root (or `~/.claude.json` for global):
 }
 ```
 
-Reconnect MCP in Claude Code. Tools appear as `mcp__xdbg__docker_xdebug_*`.
+Reconnect MCP in Claude Code. Tools appear as `mcp__xdbg__xdbg_*`.
 
 ### Flags reference
 
@@ -162,44 +161,44 @@ Reconnect MCP in Claude Code. Tools appear as `mcp__xdbg__docker_xdebug_*`.
 Xdebug is off by default for performance — enable it for the debug session:
 
 ```bash
-docker compose exec php xdebug 1     # or: docker_xdebug_container_enable from the agent
+docker compose exec php xdebug 1     # or: xdbg_container_enable from the agent
 # ... debug ...
-docker compose exec php xdebug 0     # or: docker_xdebug_container_disable
+docker compose exec php xdebug 0     # or: xdbg_container_disable
 ```
 
 Keep port 9003 free — don't run alongside `socat` or PhpStorm's IDE listener.
 
-## Tools (`*_docker_xdebug_*`)
+## Tools (`xdbg_*`)
 
 | Tool | Args |
 |---|---|
-| `docker_xdebug_status` | — |
-| `docker_xdebug_set_breakpoint` | `file` (HOST path, auto-translated), `line` |
-| `docker_xdebug_breakpoint_list` / `_remove` / `_clear` | — / `id` / — |
-| `docker_xdebug_request` | `url`, `method`?, `headers`?, `body`?, `timeoutMs`? |
-| `docker_xdebug_request_files` | `url`, `method`?, `headers_file`, `body_file`, `timeoutMs`? (secrets stay on disk) |
-| `docker_xdebug_listen` | `timeoutMs`? (wait for next CLI/command session) |
-| `docker_xdebug_run_command` | `command`, `timeoutMs`? (run inside the container) |
-| `docker_xdebug_run` / `_step_into` / `_step_over` / `_step_out` / `_pause` | — |
-| `docker_xdebug_stack` | — |
-| `docker_xdebug_context` | `stackDepth`? |
-| `docker_xdebug_eval` | `expression` |
-| `docker_xdebug_property_get` / `_set` | `name`(,`stackDepth`) / `name`,`value` |
-| `docker_xdebug_detach` / `_stop` | — |
-| `docker_xdebug_container_status` / `_enable` / `_disable` | — (when configured) |
+| `xdbg_status` | — |
+| `xdbg_set_breakpoint` | `file` (HOST path, auto-translated), `line` |
+| `xdbg_breakpoint_list` / `_remove` / `_clear` | — / `id` / — |
+| `xdbg_request` | `url`, `method`?, `headers`?, `body`?, `timeoutMs`? |
+| `xdbg_request_files` | `url`, `method`?, `headers_file`, `body_file`, `timeoutMs`? (secrets stay on disk) |
+| `xdbg_listen` | `timeoutMs`? (wait for next CLI/command session) |
+| `xdbg_run_command` | `command`, `timeoutMs`? (run inside the container) |
+| `xdbg_run` / `_step_into` / `_step_over` / `_step_out` / `_pause` | — |
+| `xdbg_stack` | — |
+| `xdbg_context` | `stackDepth`? |
+| `xdbg_eval` | `expression` |
+| `xdbg_property_get` / `_set` | `name`(,`stackDepth`) / `name`,`value` |
+| `xdbg_detach` / `_stop` | — |
+| `xdbg_container_status` / `_enable` / `_disable` | — (when configured) |
 
 ## Typical flows
 
 **Web (POST/GET/…)** — the tool fires the request itself:
 
-1. `docker_xdebug_set_breakpoint` `{file:"src/.../FooController.php", line:42}`
-2. `docker_xdebug_request` `{url:"http://127.0.0.1:8090/api/foo", method:"POST", headers:{"Content-Type":"application/json","Authorization":"Bearer …"}, body:"{…}"}` → breaks at `FooController:42`
-3. `docker_xdebug_stack` / `_context` / `_eval` / `_step_*` / `_run`
+1. `xdbg_set_breakpoint` `{file:"src/.../FooController.php", line:42}`
+2. `xdbg_request` `{url:"http://127.0.0.1:8090/api/foo", method:"POST", headers:{"Content-Type":"application/json","Authorization":"Bearer …"}, body:"{…}"}` → breaks at `FooController:42`
+3. `xdbg_stack` / `_context` / `_eval` / `_step_*` / `_run`
 
 **CLI / Symfony command:**
 
-1. `docker_xdebug_set_breakpoint` …
-2. `docker_xdebug_listen` (arms; returns when the engine connects)
+1. `xdbg_set_breakpoint` …
+2. `xdbg_listen` (arms; returns when the engine connects)
 3. launch separately: `docker compose exec -T php php bin/console app:cmd`
 4. drive with `_run` / `_step_*` / `_stack` / `_context` / `_eval`
 
@@ -208,7 +207,7 @@ Keep port 9003 free — don't run alongside `socat` or PhpStorm's IDE listener.
 A curl control API for manual use:
 
 ```bash
-docker-xdebug-mcp --mcp=false --http 127.0.0.1:9010
+xdbg --mcp=false --http 127.0.0.1:9010
 curl 'localhost:9010/bp?file=public/index.php&line=8'
 curl 'localhost:9010/request?url=http://127.0.0.1:8090/&method=POST&body={...}'
 curl localhost:9010/stack ; curl 'localhost:9010/eval?expr=$x' ; curl localhost:9010/run

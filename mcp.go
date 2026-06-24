@@ -55,51 +55,51 @@ func prop(typ, desc string) map[string]any { return map[string]any{"type": typ, 
 func newMCP(s *session) *mcpServer {
 	strMap := map[string]any{"type": "object", "description": "HTTP headers", "additionalProperties": map[string]any{"type": "string"}}
 	t := []mcpTool{
-		{"docker_xdebug_status", "Current debug session state and location.", obj(nil)},
-		{"docker_xdebug_set_breakpoint", "Set a line breakpoint. `file` is a HOST path (absolute or project-relative); it is auto-translated to the container path. Queued if no session is active yet.", obj(map[string]any{"file": prop("string", "host path, e.g. src/Foo/Bar.php"), "line": prop("integer", "1-based line")}, "file", "line")},
-		{"docker_xdebug_breakpoint_list", "List breakpoints (locations shown as host paths).", obj(nil)},
-		{"docker_xdebug_breakpoint_remove", "Remove a breakpoint by id.", obj(map[string]any{"id": prop("string", "breakpoint id")}, "id")},
-		{"docker_xdebug_breakpoint_clear", "Clear ALL breakpoints (queued and applied). Safe with or without an active session.", obj(nil)},
-		{"docker_xdebug_request", "Fire an HTTP request at the app (any method, headers, body) and run to completion. Does NOT pause at breakpoints — use docker_xdebug_listen first, then trigger the request separately to debug interactively.", obj(map[string]any{
+		{"xdbg_status", "Current debug session state and location.", obj(nil)},
+		{"xdbg_set_breakpoint", "Set a line breakpoint. `file` is a HOST path (absolute or project-relative); it is auto-translated to the container path. Queued if no session is active yet.", obj(map[string]any{"file": prop("string", "host path, e.g. src/Foo/Bar.php"), "line": prop("integer", "1-based line")}, "file", "line")},
+		{"xdbg_breakpoint_list", "List breakpoints (locations shown as host paths).", obj(nil)},
+		{"xdbg_breakpoint_remove", "Remove a breakpoint by id.", obj(map[string]any{"id": prop("string", "breakpoint id")}, "id")},
+		{"xdbg_breakpoint_clear", "Clear ALL breakpoints (queued and applied). Safe with or without an active session.", obj(nil)},
+		{"xdbg_request", "Fire an HTTP request at the app (any method, headers, body) and run to completion. Does NOT pause at breakpoints — use xdbg_listen first, then trigger the request separately to debug interactively.", obj(map[string]any{
 			"url":       prop("string", "full URL, e.g. http://127.0.0.1:8090/api/foo"),
 			"method":    prop("string", "HTTP method (default GET)"),
 			"headers":   strMap,
 			"body":      prop("string", "raw request body (e.g. JSON)"),
 			"timeoutMs": prop("integer", "max wait for the Xdebug connection (default 15000)"),
 		}, "url")},
-		{"docker_xdebug_request_files", "Like docker_xdebug_request but reads headers and body from files on disk. Use this when headers contain sensitive values (JWT tokens, cookies) that should not appear inline. headers_file: path to a text file with \"Name: Value\" lines (blank lines and # comments ignored). body_file: path to raw body bytes.", obj(map[string]any{
+		{"xdbg_request_files", "Like xdbg_request but reads headers and body from files on disk. Use this when headers contain sensitive values (JWT tokens, cookies) that should not appear inline. headers_file: path to a text file with \"Name: Value\" lines (blank lines and # comments ignored). body_file: path to raw body bytes.", obj(map[string]any{
 			"url":          prop("string", "full URL, e.g. http://127.0.0.1:8090/api/foo"),
 			"method":       prop("string", "HTTP method (default GET)"),
 			"headers_file": prop("string", "path to headers file (JSON or Name: Value lines)"),
 			"body_file":    prop("string", "path to body file (raw bytes)"),
 			"timeoutMs":    prop("integer", "max wait for the Xdebug connection (default 15000)"),
 		}, "url")},
-		{"docker_xdebug_listen", "Arm the listener and wait for the NEXT engine connection — use for CLI/Symfony commands launched separately.", obj(map[string]any{"timeoutMs": prop("integer", "max wait (default 30000)")})},
-		{"docker_xdebug_run_command", "Run a command inside the container (e.g. a Symfony console command) and wait for the Xdebug connection. Like docker_xdebug_request but for CLI commands. When no breakpoints are set, the script runs to completion and the command output is returned. When breakpoints are set, the session pauses — call run/step to drive.", obj(map[string]any{
+		{"xdbg_listen", "Arm the listener and wait for the NEXT engine connection — use for CLI/Symfony commands launched separately.", obj(map[string]any{"timeoutMs": prop("integer", "max wait (default 30000)")})},
+		{"xdbg_run_command", "Run a command inside the container (e.g. a Symfony console command) and wait for the Xdebug connection. Like xdbg_request but for CLI commands. When no breakpoints are set, the script runs to completion and the command output is returned. When breakpoints are set, the session pauses — call run/step to drive.", obj(map[string]any{
 			"command":   prop("string", "command to run in the container, e.g. \"bin/console app:my-command --option=value\""),
 			"timeoutMs": prop("integer", "max wait for the Xdebug connection (default 30000)"),
 		}, "command")},
-		{"docker_xdebug_run", "Resume to the next breakpoint or end.", obj(nil)},
-		{"docker_xdebug_step_into", "Step into.", obj(nil)},
-		{"docker_xdebug_step_over", "Step over.", obj(nil)},
-		{"docker_xdebug_step_out", "Step out.", obj(nil)},
-		{"docker_xdebug_pause", "Break/pause execution.", obj(nil)},
-		{"docker_xdebug_stack", "Call stack (host paths).", obj(nil)},
-		{"docker_xdebug_context", "Variables in scope.", obj(map[string]any{"stackDepth": prop("integer", "stack frame, default 0")})},
-		{"docker_xdebug_eval", "Evaluate a PHP expression in the current scope.", obj(map[string]any{"expression": prop("string", "PHP expression")}, "expression")},
-		{"docker_xdebug_property_get", "Get one variable/property by name.", obj(map[string]any{"name": prop("string", "variable name, e.g. $foo"), "stackDepth": prop("integer", "stack frame, default 0")}, "name")},
-		{"docker_xdebug_property_set", "Set a variable to a PHP literal value.", obj(map[string]any{"name": prop("string", "variable name"), "value": prop("string", "PHP value")}, "name", "value")},
-		{"docker_xdebug_detach", "Detach: let the script finish, drop the session.", obj(nil)},
-		{"docker_xdebug_stop", "Stop: terminate the debugged script.", obj(nil)},
+		{"xdbg_run", "Resume to the next breakpoint or end.", obj(nil)},
+		{"xdbg_step_into", "Step into.", obj(nil)},
+		{"xdbg_step_over", "Step over.", obj(nil)},
+		{"xdbg_step_out", "Step out.", obj(nil)},
+		{"xdbg_pause", "Break/pause execution.", obj(nil)},
+		{"xdbg_stack", "Call stack (host paths).", obj(nil)},
+		{"xdbg_context", "Variables in scope.", obj(map[string]any{"stackDepth": prop("integer", "stack frame, default 0")})},
+		{"xdbg_eval", "Evaluate a PHP expression in the current scope.", obj(map[string]any{"expression": prop("string", "PHP expression")}, "expression")},
+		{"xdbg_property_get", "Get one variable/property by name.", obj(map[string]any{"name": prop("string", "variable name, e.g. $foo"), "stackDepth": prop("integer", "stack frame, default 0")}, "name")},
+		{"xdbg_property_set", "Set a variable to a PHP literal value.", obj(map[string]any{"name": prop("string", "variable name"), "value": prop("string", "PHP value")}, "name", "value")},
+		{"xdbg_detach", "Detach: let the script finish, drop the session.", obj(nil)},
+		{"xdbg_stop", "Stop: terminate the debugged script.", obj(nil)},
 	}
 	if s.statusCmd != "" {
-		t = append(t, mcpTool{"docker_xdebug_container_status", "Check whether Xdebug is enabled in the container.", obj(nil)})
+		t = append(t, mcpTool{"xdbg_container_status", "Check whether Xdebug is enabled in the container.", obj(nil)})
 	}
 	if s.enableCmd != "" {
-		t = append(t, mcpTool{"docker_xdebug_container_enable", "Enable Xdebug in the container.", obj(nil)})
+		t = append(t, mcpTool{"xdbg_container_enable", "Enable Xdebug in the container.", obj(nil)})
 	}
 	if s.disableCmd != "" {
-		t = append(t, mcpTool{"docker_xdebug_container_disable", "Disable Xdebug in the container.", obj(nil)})
+		t = append(t, mcpTool{"xdbg_container_disable", "Disable Xdebug in the container.", obj(nil)})
 	}
 	return &mcpServer{sess: s, tools: t}
 }
@@ -160,61 +160,61 @@ func (m *mcpServer) handle(req rpcReq) *rpcResp {
 func (m *mcpServer) call(name string, a map[string]any) (string, error) {
 	s := m.sess
 	switch name {
-	case "docker_xdebug_status":
+	case "xdbg_status":
 		return s.Status(), nil
-	case "docker_xdebug_set_breakpoint":
+	case "xdbg_set_breakpoint":
 		return s.SetBreakpoint(getStr(a, "file"), getInt(a, "line"))
-	case "docker_xdebug_breakpoint_list":
+	case "xdbg_breakpoint_list":
 		return s.BreakpointList()
-	case "docker_xdebug_breakpoint_remove":
+	case "xdbg_breakpoint_remove":
 		return s.BreakpointRemove(getStr(a, "id"))
-	case "docker_xdebug_breakpoint_clear":
+	case "xdbg_breakpoint_clear":
 		return s.BreakpointClearAll()
-	case "docker_xdebug_request":
+	case "xdbg_request":
 		return s.DoRequest(getStr(a, "url"), getStr(a, "method"), getStrMap(a, "headers"), getStr(a, "body"), time.Duration(getInt(a, "timeoutMs"))*time.Millisecond)
-	case "docker_xdebug_request_files":
+	case "xdbg_request_files":
 		return s.DoRequestFromFiles(getStr(a, "url"), getStr(a, "method"), getStr(a, "headers_file"), getStr(a, "body_file"), time.Duration(getInt(a, "timeoutMs"))*time.Millisecond)
-	case "docker_xdebug_listen":
+	case "xdbg_listen":
 		t := getInt(a, "timeoutMs")
 		if t == 0 {
 			t = 30000
 		}
 		return s.ListenWait(time.Duration(t) * time.Millisecond)
-	case "docker_xdebug_run_command":
+	case "xdbg_run_command":
 		t := getInt(a, "timeoutMs")
 		if t == 0 {
 			t = 30000
 		}
 		return s.RunCommand(getStr(a, "command"), time.Duration(t)*time.Millisecond)
-	case "docker_xdebug_run":
+	case "xdbg_run":
 		return s.step("run")
-	case "docker_xdebug_step_into":
+	case "xdbg_step_into":
 		return s.step("step_into")
-	case "docker_xdebug_step_over":
+	case "xdbg_step_over":
 		return s.step("step_over")
-	case "docker_xdebug_step_out":
+	case "xdbg_step_out":
 		return s.step("step_out")
-	case "docker_xdebug_pause":
+	case "xdbg_pause":
 		return s.step("break")
-	case "docker_xdebug_stack":
+	case "xdbg_stack":
 		return s.Stack()
-	case "docker_xdebug_context":
+	case "xdbg_context":
 		return s.Context(getInt(a, "stackDepth"))
-	case "docker_xdebug_eval":
+	case "xdbg_eval":
 		return s.Eval(getStr(a, "expression"))
-	case "docker_xdebug_property_get":
+	case "xdbg_property_get":
 		return s.PropertyGet(getStr(a, "name"), getInt(a, "stackDepth"))
-	case "docker_xdebug_property_set":
+	case "xdbg_property_set":
 		return s.PropertySet(getStr(a, "name"), getStr(a, "value"))
-	case "docker_xdebug_detach":
+	case "xdbg_detach":
 		return s.Detach()
-	case "docker_xdebug_stop":
+	case "xdbg_stop":
 		return s.Stop()
-	case "docker_xdebug_container_status":
+	case "xdbg_container_status":
 		return s.XdebugContainerStatus()
-	case "docker_xdebug_container_enable":
+	case "xdbg_container_enable":
 		return s.XdebugEnable()
-	case "docker_xdebug_container_disable":
+	case "xdbg_container_disable":
 		return s.XdebugDisable()
 	default:
 		return "", fmt.Errorf("unknown tool %q", name)

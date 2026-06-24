@@ -1,4 +1,4 @@
-@startuml docker-xdebug-mcp-architecture
+@startuml xdbg-architecture
 
 ' ---- technical component diagram with ports, protocols, numbered flow ----
 
@@ -30,13 +30,13 @@ skinparam port {
   BorderColor #455A64
 }
 
-title docker-xdebug-mcp — component & protocol architecture
+title xdbg — component & protocol architecture
 
 ' =================== HOST ===================
 package "Host (developer machine)"  {
   actor "MCP client\n(Claude Code / Cursor)" as client
 
-  rectangle "docker-xdebug-mcp (Go binary)" as xdbg {
+  rectangle "xdbg (Go binary)" as xdbg {
     port "stdin/stdout\nJSON-RPC 2.0\n(MCP stdio)" as io_stdio
     port "TCP :9003\nDBGp listener\n0.0.0.0 (ephemeral)" as io_listen
     port "HTTP :9010\ncontrol API\n(optional, --http)" as io_http

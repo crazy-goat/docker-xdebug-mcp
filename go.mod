@@ -1,4 +1,4 @@
-module docker-xdebug-mcp
+module xdbg
 
 go 1.26
 

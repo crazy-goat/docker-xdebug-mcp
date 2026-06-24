@@ -102,7 +102,7 @@ func (s *session) acquireListener(portWait time.Duration) (net.Listener, error) 
 	s.mu.Lock()
 	if s.ln != nil || s.conn != nil {
 		s.mu.Unlock()
-		return nil, fmt.Errorf("debug session already active — call docker_xdebug_detach or docker_xdebug_stop first")
+		return nil, fmt.Errorf("debug session already active — call xdbg_detach or xdbg_stop first")
 	}
 	s.mu.Unlock()
 
@@ -566,7 +566,7 @@ func (s *session) ListenWait(timeout time.Duration) (string, error) {
 // ListenFireForget opens the DBGp port and returns immediately — the listener
 // stays open and the next Xdebug connection will be adopted. Use when the
 // caller wants to arm the listener and then trigger the command separately
-// (e.g. via run_command) without blocking on listen. Check docker_xdebug_status
+// (e.g. via run_command) without blocking on listen. Check xdbg_status
 // later to see if a session was adopted.
 func (s *session) ListenFireForget() (string, error) {
 	// We don't know the accept timeout here — use a long default (1h) so the
@@ -574,7 +574,7 @@ func (s *session) ListenFireForget() (string, error) {
 	if err := s.openOnce(time.Hour, 10*time.Second); err != nil {
 		return "", err
 	}
-	return "listener armed (fire-and-forget); check docker_xdebug_status to see if a session was adopted", nil
+	return "listener armed (fire-and-forget); check xdbg_status to see if a session was adopted", nil
 }
 
 // RunCommand executes a command inside the container (e.g. a Symfony console
