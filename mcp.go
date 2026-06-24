@@ -67,7 +67,7 @@ func newMCP(s *session) *mcpServer {
 			"body":      prop("string", "raw request body (e.g. JSON)"),
 			"timeoutMs": prop("integer", "max wait for the Xdebug connection (default 15000)"),
 		}, "url")},
-		{"xdbg_request_files", "Like xdbg_request but reads headers and body from files on disk. Use this when headers contain sensitive values (JWT tokens, cookies) that should not appear inline. headers_file: path to a text file with \"Name: Value\" lines (blank lines and # comments ignored). body_file: path to raw body bytes.", obj(map[string]any{
+		{"xdbg_request_from_files", "Like xdbg_request but reads headers and body from files on disk. Use this when headers contain sensitive values (JWT tokens, cookies) that should not appear inline. headers_file: path to a text file with \"Name: Value\" lines (blank lines and # comments ignored). body_file: path to raw body bytes.", obj(map[string]any{
 			"url":          prop("string", "full URL, e.g. http://127.0.0.1:8090/api/foo"),
 			"method":       prop("string", "HTTP method (default GET)"),
 			"headers_file": prop("string", "path to headers file (JSON or Name: Value lines)"),
@@ -172,7 +172,7 @@ func (m *mcpServer) call(name string, a map[string]any) (string, error) {
 		return s.BreakpointClearAll()
 	case "xdbg_request":
 		return s.DoRequest(getStr(a, "url"), getStr(a, "method"), getStrMap(a, "headers"), getStr(a, "body"), time.Duration(getInt(a, "timeoutMs"))*time.Millisecond)
-	case "xdbg_request_files":
+	case "xdbg_request_from_files":
 		return s.DoRequestFromFiles(getStr(a, "url"), getStr(a, "method"), getStr(a, "headers_file"), getStr(a, "body_file"), time.Duration(getInt(a, "timeoutMs"))*time.Millisecond)
 	case "xdbg_listen":
 		t := getInt(a, "timeoutMs")

@@ -215,7 +215,7 @@ script runs to completion and the request returns. To debug interactively,
 set breakpoints first, then call `xdbg_request` — the tool returns once the
 session is paused, and you drive it with `xdbg_run` / `xdbg_step_*` / etc.
 
-### `xdbg_request_files(string url, string? method, string? headers_file, string? body_file, int? timeoutMs)`
+### `xdbg_request_from_files(string url, string? method, string? headers_file, string? body_file, int? timeoutMs)`
 `url` is required; `headers_file` is a path to a file with `Name: Value`
 lines (blank lines and `#` comments ignored — or a JSON object); `body_file`
 is a path to raw body bytes; `timeoutMs` defaults to 15000. Like
