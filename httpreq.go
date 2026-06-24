@@ -14,7 +14,7 @@ import (
 // doAndWait fires a pre-built HTTP request in a goroutine, then waits for the
 // Xdebug engine connection on the listener. The debugger is immediately detached
 // so the script runs to completion — no follow-up run/step call needed.
-// To debug interactively, use xdbg_listen before triggering the request.
+// To debug interactively, use listen before triggering the request.
 func (s *session) doAndWait(req *http.Request, timeout time.Duration) (string, error) {
 	s.mu.Lock()
 	ready := s.ready
@@ -45,7 +45,7 @@ func (s *session) doAndWait(req *http.Request, timeout time.Duration) (string, e
 		// adopt() already auto-ran when there were no breakpoints; the session
 		// is done. Otherwise the engine is paused at the start of the script
 		// (state="started") with breakpoints applied — return without detaching
-		// so the caller can drive: xdbg_run / _step_* / _eval / …
+		// so the caller can drive: run / step_* / eval / …
 		s.mu.Lock()
 		state := s.state
 		s.mu.Unlock()

@@ -1,6 +1,6 @@
 // xdbg — a self-contained, docker-aware Xdebug (DBGp) debugger.
 //
-// Primary mode: an MCP stdio server exposing xdbg_* tools (full HTTP
+// Primary mode: an MCP stdio server exposing xdbg tools (full HTTP
 // method/header/body control for requests, host<->container path translation,
 // CLI/command debugging). Spawned by an MCP client (e.g. Claude Code) via
 // .mcp.json.
@@ -40,7 +40,7 @@ func main() {
 			s.statusCmd = xdebugStatusCmd
 			s.containerExec = containerExec
 			s.projectDir = localRoot
-			log.Printf("MCP stdio server ready (xdbg_*)")
+			log.Printf("MCP stdio server ready (xdbg tools)")
 			newMCP(s).serve()
 			return nil
 		},

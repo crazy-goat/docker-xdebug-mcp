@@ -121,7 +121,7 @@ Create or edit `.mcp.json` in your project root (or `~/.claude.json` for global)
 }
 ```
 
-Reconnect MCP in Claude Code. Tools appear as `mcp__xdbg__xdbg_*`.
+Reconnect MCP in Claude Code. Tools appear as `mcp__xdbg__*`.
 
 ### Cursor / other MCP clients
 
@@ -154,11 +154,11 @@ adapted to your client's MCP configuration format.
    xdbg --dbg-port 9003 \
         --local-root /path/to/project \
         --docker-root /var/www/project
-   # Should print: MCP stdio server ready (xdbg_*)
+   # Should print: MCP stdio server ready (xdbg tools)
    ```
 
 3. In your AI agent, verify tools are available. The agent should have access
-   to tools prefixed with `xdbg_` (opencode) or `mcp__xdbg__xdbg_*` (Claude
+   to tools prefixed with `xdbg_*` (opencode) or `mcp__xdbg__*` (Claude
    Code).
 
 ## Troubleshooting
