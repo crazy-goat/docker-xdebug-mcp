@@ -133,6 +133,7 @@ Drop a `.mcp.json` in your project root (or `~/.claude.json` for global):
         "--docker-root", "/var/www/your-app",
         "--xdebug-enable-cmd",  "docker compose exec -T php set-xdebug-on",
         "--xdebug-disable-cmd", "docker compose exec -T php set-xdebug-off",
+        "--xdebug-status-cmd",  "docker compose exec -T php get-xdebug-status",
         "--container-exec",      "docker compose exec -T php"
       ]
     }
