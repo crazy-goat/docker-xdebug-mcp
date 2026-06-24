@@ -106,9 +106,9 @@ project's `opencode.json`):
         "--dbg-port", "9003",
         "--local-root",  "/Users/you/work/your-app",
         "--docker-root", "/var/www/your-app",
-        "--xdebug-enable-cmd",  "docker compose exec -T php xdebug 1",
-        "--xdebug-disable-cmd", "docker compose exec -T php xdebug 0",
-        "--xdebug-status-cmd",  "docker compose exec -T php php -r \"echo ini_get('xdebug.mode') ?: 'disabled';\"",
+        "--xdebug-enable-cmd",  "docker compose exec -T php set-xdebug-on",
+        "--xdebug-disable-cmd", "docker compose exec -T php set-xdebug-off",
+        "--xdebug-status-cmd",  "docker compose exec -T php get-xdebug-status",
         "--container-exec",      "docker compose exec -T php"
       ]
     }
@@ -131,8 +131,8 @@ Drop a `.mcp.json` in your project root (or `~/.claude.json` for global):
         "--dbg-port", "9003",
         "--local-root",  "/Users/you/work/your-app",
         "--docker-root", "/var/www/your-app",
-        "--xdebug-enable-cmd",  "docker compose exec -T php xdebug 1",
-        "--xdebug-disable-cmd", "docker compose exec -T php xdebug 0",
+        "--xdebug-enable-cmd",  "docker compose exec -T php set-xdebug-on",
+        "--xdebug-disable-cmd", "docker compose exec -T php set-xdebug-off",
         "--container-exec",      "docker compose exec -T php"
       ]
     }
@@ -161,9 +161,9 @@ Reconnect MCP in Claude Code. Tools appear as `mcp__xdbg__xdbg_*`.
 Xdebug is off by default for performance — enable it for the debug session:
 
 ```bash
-docker compose exec php xdebug 1     # or: xdbg_container_enable from the agent
+docker compose exec php set-xdebug-on      # or: xdbg_container_enable from the agent
 # ... debug ...
-docker compose exec php xdebug 0     # or: xdbg_container_disable
+docker compose exec php set-xdebug-off     # or: xdbg_container_disable
 ```
 
 Keep port 9003 free — don't run alongside `socat` or PhpStorm's IDE listener.

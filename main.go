@@ -65,7 +65,7 @@ func main() {
 	f.StringVar(&dockerRoot, "docker-root", "/var/www/subscription-api", "container project root")
 	f.StringVar(&httpAddr, "http", "", "HTTP control API address, e.g. 127.0.0.1:9010")
 	f.BoolVar(&mcpMode, "mcp", true, "run as MCP stdio server (stdout = JSON-RPC channel)")
-	f.StringVar(&xdebugEnableCmd, "xdebug-enable-cmd", "", `shell command to enable Xdebug in the container, e.g. "docker compose exec -T php xdebug 1"`)
+	f.StringVar(&xdebugEnableCmd, "xdebug-enable-cmd", "", `shell command to enable Xdebug in the container, e.g. "docker compose exec -T php set-xdebug-on"`)
 	f.StringVar(&xdebugDisableCmd, "xdebug-disable-cmd", "", `shell command to disable Xdebug in the container`)
 	f.StringVar(&xdebugStatusCmd, "xdebug-status-cmd", "", `shell command to check Xdebug status in the container`)
 	f.StringVar(&containerExec, "container-exec", "docker compose exec -T php-sub-api", "prefix for running commands in the container (used by xdbg_run_command)")

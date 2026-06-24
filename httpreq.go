@@ -55,7 +55,7 @@ func (s *session) doAndWait(req *http.Request, timeout time.Duration) (string, e
 		return "request fired; session paused at script start — call run/step to drive", nil
 	case <-time.After(timeout):
 		s.closeLn()
-		return "", fmt.Errorf("no Xdebug connection within %s — is Xdebug enabled in the container? (docker compose exec php-sub-api xdebug 1)", timeout)
+		return "", fmt.Errorf("no Xdebug connection within %s — is Xdebug enabled in the container? (docker compose exec php set-xdebug-on)", timeout)
 	}
 }
 
