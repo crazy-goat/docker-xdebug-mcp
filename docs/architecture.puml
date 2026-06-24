@@ -27,44 +27,54 @@ skinparam interface {
   BorderColor #455A64
 }
 
-title xdbg — how it connects the AI agent to PHP in Docker
+title xdbg — HTTP request debugging flow
 
 ' =================== LEFT: MCP client ===================
 package "MCP client" {
   actor "Claude Code\n/ opencode / Cursor" as client
 }
 
-' =================== MIDDLE: xdbg ===================
-package "Host — xdbg (Go binary, MCP stdio server)" {
-  rectangle "MCP stdio\nJSON-RPC over\nstdin/stdout" as io
-  rectangle "xdbg core\nDBGp state machine\n(breakpoints, step, eval,\npath translation)" as core
-  rectangle "DBGp listener\n0.0.0.0:9003\n(one connection per session)" as listener
-  io -[hidden]right-> core
-  core -[hidden]right-> listener
+' =================== MIDDLE: xdbg (host) ===================
+package "Host — xdbg (Go binary)" {
+  rectangle "MCP stdio\nJSON-RPC\nstdin/stdout" as io
+  rectangle "xdbg core\nDBGp state machine" as core
+  rectangle "DBGp listener\n0.0.0.0:9003" as listener
+  io -[hidden]down-> core
+  core -[hidden]down-> listener
 }
 
 ' =================== RIGHT: Container ===================
 package "Container (PHP app)" {
-  rectangle "php-fpm\nweb entrypoint" as fpm
-  rectangle "Xdebug engine\nstart_with_request=yes\nclient_host=host.docker.internal" as engine
-  rectangle "PHP app\ncontrollers, console commands" as app
-  fpm -[hidden]right-> app
-  engine -[hidden]down-> app
+  rectangle "php-fpm\n:8080 (web)" as fpm
+  rectangle "PHP script\n(controller / command)" as script
+  rectangle "Xdebug engine\nstart_with_request=yes" as engine
+  fpm -[hidden]down-> script
+  script -[hidden]down-> engine
 }
 
-' =================== FLOWS ===================
-client --> io : "1  tools/call  xdbg_*"
+' =================== HTTP REQUEST FLOW (blue) ===================
+client --> io : "1  xdbg_request(url, method,\n    headers, body)"
 io --> core : "2  dispatch"
 core --> listener : "3  open :9003"
-listener --> engine : "4  Xdebug dials out\n    on request/command"
-core --> engine : "5  DBGp commands\n    breakpoint_set, step, eval"
-core --> fpm : "6  fire HTTP request\n    (method/headers/body)"
-core --> app : "7  run_command\n    (docker compose exec)"
-fpm --> app : "8  execute script"
-app --> engine : "9  Xdebug hooks fire"
+core --> fpm : "4  fire HTTP request\n    POST /api/foo HTTP/1.1" #1565C0
+fpm --> script : "5  php-fpm executes\n    FooController::bar()"
+script --> engine : "6  Xdebug hooks fire"
+engine --> listener : "7  Xdebug dials out\n    host.docker.internal:9003" #E65100
+listener --> core : "8  adopt connection\n    apply breakpoints"
+core --> engine : "9  DBGp commands\n    breakpoint_set, step, eval" #E65100
+
+' =================== CLI COMMAND FLOW (green) ===================
+core --> script : "    xdbg_run_command\n    docker compose exec …\n    (same flow, steps 6-9)" #2E7D32
 
 ' =================== SIDE: Xdebug on/off ===================
 rectangle "xdbg_container_enable / _disable\n(--xdebug-*-cmd)" as toggle
 toggle --> engine : "turn on/off at runtime"
+
+legend right
+  |= color |= path |
+  | <color:#1565C0>━━</color> | HTTP request (xdbg → php-fpm) |
+  | <color:#E65100>━━</color> | DBGp connection (Xdebug → xdbg) |
+  | <color:#2E7D32>━━</color> | CLI command (xdbg_run_command) |
+endlegend
 
 @enduml
