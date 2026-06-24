@@ -165,8 +165,6 @@ and `xdbg_container_status` — and can turn Xdebug on only for the debug
 session, then off again when it's done. No shell access, no manual steps —
 the agent handles the full lifecycle itself.
 
-Keep port 9003 free — don't run alongside `socat` or PhpStorm's IDE listener.
-
 ## Tools (`xdbg_*`)
 
 ### `xdbg_status()`
