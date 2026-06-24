@@ -156,15 +156,14 @@ Reconnect MCP in Claude Code. Tools appear as `mcp__xdbg__xdbg_*`.
 | `--container-exec` | `docker compose exec -T php` | Prefix for running CLI commands inside the container |
 | `--mcp` | `true` | Run as MCP stdio server (stdout = JSON-RPC channel) |
 
-### Enable Xdebug in the container
+### Let the agent toggle Xdebug for you
 
-Xdebug is off by default for performance — enable it for the debug session:
-
-```bash
-docker compose exec php set-xdebug-on      # or: xdbg_container_enable from the agent
-# ... debug ...
-docker compose exec php set-xdebug-off     # or: xdbg_container_disable
-```
+Xdebug is off by default for performance. When you configure
+`--xdebug-enable-cmd`, `--xdebug-disable-cmd` and `--xdebug-status-cmd`, the
+agent gets three MCP tools — `xdbg_container_enable`, `xdbg_container_disable`
+and `xdbg_container_status` — and can turn Xdebug on only for the debug
+session, then off again when it's done. No shell access, no manual steps —
+the agent handles the full lifecycle itself.
 
 Keep port 9003 free — don't run alongside `socat` or PhpStorm's IDE listener.
 
