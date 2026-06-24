@@ -350,12 +350,6 @@ shell access.
 7. `xdbg_detach` or `xdbg_stop` — end the session and free port 9003
 8. `xdbg_container_disable` — turn Xdebug off (restore container performance)
 
-## Files
-
-`main.go` (cobra CLI/wire-up), `session.go` (listener, adopt, commands, path
-translation), `dbgp.go` (wire framing + XML/base64 decode), `httpreq.go`
-(request firing), `mcp.go` (JSON-RPC stdio).
-
 ## License
 
 MIT — see [LICENSE](LICENSE).
