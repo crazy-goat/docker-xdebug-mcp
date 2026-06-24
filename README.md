@@ -1,8 +1,16 @@
 # xdbg — docker-aware Xdebug debugger (MCP server)
 
 A self-contained Go debugger that **is** the Xdebug client: it accepts the
-container's DBGp connection and exposes `docker_xdebug_*` tools over MCP. It's a
-superset of PhpStorm's Xdebug MCP tools, fixing their limitations:
+container's DBGp connection and exposes `docker_xdebug_*` tools over MCP.
+
+## Why
+
+PhpStorm ships built-in MCP tools for Xdebug, but they only fire **GET**
+requests and don't let you set custom **headers** (cookies, auth tokens,
+`Content-Type` etc.). For real API work — POST/PUT/PATCH with JSON bodies and
+JWT/auth headers — you end up dropping back to `curl` + `socat` to php-fpm.
+That's the gap this repo fills: the same MCP-driven flow, but with full
+control over method, headers, and body, plus a few extras on top.
 
 - **Any HTTP method + headers + body** for `docker_xdebug_request` (PhpStorm's is GET-only).
 - **CLI / Symfony command** debugging via `docker_xdebug_listen`.
