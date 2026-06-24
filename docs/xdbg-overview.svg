@@ -82,16 +82,16 @@
           fill="#E8F3FF" stroke="#3B7DD8" stroke-width="1.5"/>
     <text x="1120" y="92" text-anchor="middle" font-weight="700" font-size="15" fill="#0D47A1">Docker container</text>
 
-  <!-- php-fpm (top-left) -->
+  <!-- php-fpm (top-left, slightly lower than app to avoid stacked arrival lanes) -->
   <g id="fpm">
-    <rect x="940" y="140" width="180" height="100" rx="8" ry="8"
+    <rect x="940" y="180" width="180" height="100" rx="8" ry="8"
           fill="#FAFAFA" stroke="#607D8B" stroke-width="1"/>
-    <text x="1030" y="178" text-anchor="middle" font-weight="600" font-size="14">php-fpm</text>
-    <text x="1030" y="202" text-anchor="middle" font-size="11" fill="#455A64">web entrypoint</text>
-    <text x="1030" y="222" text-anchor="middle" font-size="11" fill="#455A64">(HTTP from xdbg)</text>
+    <text x="1030" y="218" text-anchor="middle" font-weight="600" font-size="14">php-fpm</text>
+    <text x="1030" y="242" text-anchor="middle" font-size="11" fill="#455A64">web entrypoint</text>
+    <text x="1030" y="262" text-anchor="middle" font-size="11" fill="#455A64">(HTTP from xdbg)</text>
   </g>
 
-  <!-- php app (top-right) -->
+  <!-- php app (top-right, higher than fpm) -->
   <g id="app">
     <rect x="1140" y="140" width="180" height="100" rx="8" ry="8"
           fill="#FAFAFA" stroke="#607D8B" stroke-width="1"/>
@@ -132,9 +132,9 @@
        WITHIN-CONTAINER arrows (solid)
        ========================================================= -->
   <!-- fpm → xdebug  -->
-  <line x1="1030" y1="240" x2="1030" y2="590" stroke="#37474F" stroke-width="1.2" marker-end="url(#arrow-solid)"/>
-  <text x="950" y="420" font-size="10" fill="#263238">runs script</text>
-  <text x="950" y="434" font-size="10" fill="#263238">→ hooks fire</text>
+  <line x1="1030" y1="280" x2="1030" y2="590" stroke="#37474F" stroke-width="1.2" marker-end="url(#arrow-solid)"/>
+  <text x="950" y="440" font-size="10" fill="#263238">runs script</text>
+  <text x="950" y="454" font-size="10" fill="#263238">→ hooks fire</text>
 
   <!-- app → xdebug -->
   <line x1="1230" y1="240" x2="1230" y2="590" stroke="#37474F" stroke-width="1.2" marker-end="url(#arrow-solid)"/>
@@ -146,19 +146,19 @@
        Each path: M start  H midX1  V y-target  H target
        ========================================================= -->
 
-  <!-- dbgp → php-fpm (fire HTTP) -->
-  <path d="M 400 450 H 670 V 165 H 935" fill="none"
+  <!-- dbgp → php-fpm (fire HTTP) — routed on the right (midX=820) -->
+  <path d="M 400 450 H 820 V 205 H 935" fill="none"
         stroke="#3B7DD8" stroke-width="1.5"
         stroke-dasharray="6,4" marker-end="url(#arrow-dashed)"/>
-  <text x="670" y="430" text-anchor="middle" font-size="11" fill="#0D47A1" font-weight="600">fire HTTP request</text>
-  <text x="670" y="444" text-anchor="middle" font-size="10" fill="#0D47A1">(method / headers / body)</text>
+  <text x="822" y="445" text-anchor="middle" font-size="11" fill="#0D47A1" font-weight="600">fire HTTP request</text>
+  <text x="822" y="459" text-anchor="middle" font-size="10" fill="#0D47A1">(method / headers / body)</text>
 
-  <!-- dbgp → PHP app (run_command) — different midX to avoid overlap -->
-  <path d="M 400 400 H 820 V 165 H 1135" fill="none"
+  <!-- dbgp → PHP app (run_command) — routed LEFT to avoid crossing with fpm path -->
+  <path d="M 400 400 H 580 V 165 H 1135" fill="none"
         stroke="#3B7DD8" stroke-width="1.5"
         stroke-dasharray="6,4" marker-end="url(#arrow-dashed)"/>
-  <text x="822" y="385" text-anchor="middle" font-size="11" fill="#0D47A1" font-weight="600">run_command</text>
-  <text x="822" y="399" text-anchor="middle" font-size="10" fill="#0D47A1">(docker compose exec)</text>
+  <text x="580" y="385" text-anchor="end" font-size="11" fill="#0D47A1" font-weight="600">run_command</text>
+  <text x="580" y="399" text-anchor="end" font-size="10" fill="#0D47A1">(docker compose exec)</text>
 
   <!-- listener ↔ xdebug (DBGp :9003) — main bridge (orthogonal, now aligned horizontally) -->
   <!-- listener ↔ xdebug (DBGp :9003) — two horizontal arrows with wide spacing -->
