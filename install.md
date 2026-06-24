@@ -14,6 +14,12 @@
 go install github.com/crazy-goat/xdbg@latest
 ```
 
+> **Note:** `proxy.golang.org` caches versions for a few minutes. If the
+> command fails with a module-path mismatch, install the latest commit directly:
+> ```bash
+> GOPROXY=direct go install github.com/crazy-goat/xdbg@main
+> ```
+
 The binary is placed in `$(go env GOPATH)/bin` (default `~/go/bin`). Add it to your `PATH`:
 
 ```bash
