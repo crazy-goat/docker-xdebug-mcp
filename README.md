@@ -15,13 +15,15 @@ opencode, Cursor) can fire HTTP requests (`curl`-style) and run CLI commands
 inside the container, then drive the resulting debug session: breakpoints,
 stack, variables, eval, stepping. All from the chat.
 
-> Why not PhpStorm's own MCP tools? They only fire **GET** requests and don't
-> let you set **headers** (cookies, auth tokens, `Content-Type`). For real API
-> work — POST/PUT/PATCH with JSON bodies and JWT/auth headers — you end up
-> juggling `curl`, `socat`, port forwards, and a second terminal. xdbg closes
-> that gap: the same MCP-driven flow, but with full control over method,
-> headers, and body, plus CLI/Symfony command debugging and host↔container
-> path translation. No PhpStorm, no `socat`.
+## Why not PhpStorm's MCP tools?
+
+PhpStorm ships its own Xdebug MCP tools, but they only fire **GET** requests
+and don't let you set **headers** (cookies, auth tokens, `Content-Type`). For
+real API work — POST/PUT/PATCH with JSON bodies and JWT/auth headers — you end
+up juggling `curl`, `socat`, port forwards, and a second terminal. xdbg closes
+that gap: the same MCP-driven flow, but with full control over method, headers,
+and body, plus CLI/Symfony command debugging and host↔container path
+translation. No PhpStorm, no `socat`.
 
 ## What it solves
 
