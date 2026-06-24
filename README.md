@@ -67,6 +67,10 @@ For the full request round-trip with step-by-step sequence, see the
 >
 > The agent will read the guide and walk you through every step.
 >
+> xdbg also ships a **dedicated AI skill** (`skills/xdebug-docker-debug/SKILL.md`)
+> that gives the agent context on debugging workflows, failure recovery, and best
+> practices — making adoption smoother. The agent will ask you before installing it.
+>
 > Full guide: [install.md](install.md)
 
 ### `go install` (recommended — one line, no clone)
