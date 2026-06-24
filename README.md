@@ -158,7 +158,7 @@ Reconnect MCP in Claude Code. Tools appear as `mcp__xdbg__xdbg_*`.
 
 ### Let the agent toggle Xdebug for you
 
-Xdebug is off by default for performance. When you configure
+Xdebug should be off by default for performance. When you configure
 `--xdebug-enable-cmd`, `--xdebug-disable-cmd` and `--xdebug-status-cmd`, the
 agent gets three MCP tools — `xdbg_container_enable`, `xdbg_container_disable`
 and `xdbg_container_status` — and can turn Xdebug on only for the debug
