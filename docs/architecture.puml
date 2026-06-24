@@ -1,76 +1,111 @@
 @startuml docker-xdebug-mcp-architecture
 
-skinparam backgroundColor #FAFAFA
-skinparam componentStyle rectangle
-skinparam component {
-  BackgroundColor<<host>>       #E3F2FD
-  BackgroundColor<<container>>  #FFF3E0
-  BackgroundColor<<mcp>>        #F3E5F5
-  BorderColor                   #455A64
-  FontSize                      13
+' ---- technical component diagram with ports, protocols, numbered flow ----
+
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam defaultFontName "Helvetica"
+skinparam defaultFontSize 12
+skinparam roundCorner 6
+skinparam ArrowColor #37474F
+skinparam ArrowFontColor #263238
+skinparam package {
+  BorderColor #607D8B
+  FontStyle bold
+}
+skinparam rectangle {
+  BackgroundColor #ECEFF1
+  BorderColor #455A64
+}
+skinparam database {
+  BackgroundColor #ECEFF1
+  BorderColor #455A64
 }
 skinparam interface {
-  BackgroundColor               #ECEFF1
-  BorderColor                   #455A64
+  BackgroundColor #CFD8DC
+  BorderColor #455A64
 }
-skinparam ArrowColor #455A64
-skinparam defaultFontName "Helvetica"
-
-title docker-xdebug-mcp — component architecture
-
-' ===================== HOST =====================
-
-package "Host (macOS / Linux)" <<host>> {
-  actor "MCP client\n(Claude Code, etc.)" as client
-
-  component "xdbg (Go binary)\nMCP stdio server\n— JSON-RPC over stdin/stdout" as xdbg <<host>>
-
-  component "DBGp listener\n0.0.0.0:9003\n(ephemeral, one conn at a time)" as listener <<host>>
-
-  interface "stdio"   as stdio
-  interface "TCP/9003" as tcp
-
-  client   -- stdio
-  stdio    -- xdbg
-  xdbg     ..> listener  : open / close\n(per debug session)
-  listener -- tcp
+skinparam port {
+  BackgroundColor #CFD8DC
+  BorderColor #455A64
 }
 
-' ===================== NETWORK =====================
+title docker-xdebug-mcp — component & protocol architecture
 
-package "Docker network" {
-  interface "host.docker.internal:9003" as dockerTcp
-  tcp <..> dockerTcp : Xdebug dials out\n(xdebug.start_with_request=yes)
+' =================== HOST ===================
+package "Host (developer machine)"  {
+  actor "MCP client\n(Claude Code / Cursor)" as client
+
+  rectangle "docker-xdebug-mcp (Go binary)" as xdbg {
+    port "stdin/stdout\nJSON-RPC 2.0\n(MCP stdio)" as io_stdio
+    port "TCP :9003\nDBGp listener\n0.0.0.0 (ephemeral)" as io_listen
+    port "HTTP :9010\ncontrol API\n(optional, --http)" as io_http
+    rectangle "mcp.go\nJSON-RPC dispatch" as m_mcp
+    rectangle "session.go\nDBGp state machine\n(adopt / step / eval)" as m_sess
+    rectangle "httpreq.go\nrequest firing" as m_req
+    rectangle "dbgp.go\nwire framing\nXML + base64" as m_dbgp
+    m_mcp --> m_sess
+    m_req --> m_sess
+    m_sess --> m_dbgp
+  }
+
+  rectangle "lsof probe\n(detect port 9003 holder)" as lsof
 }
 
-' ===================== CONTAINER =====================
-
-package "Container (php-sub-api)" <<container>> {
-  component "Web server / php-fpm\n(index.php, controller, …)" as php <<container>>
-
-  component "Xdebug\n(DBGp engine)" as xdebug <<container>>
-
-  interface "FastCGI / FPM" as fpm
-  interface "TCP/9003 (DBGp)" as xtcp
-
-  php   -- fpm
-  xdebug -- xtcp
+' =================== NETWORK BOUNDARY ===================
+cloud "Docker network\n(host.docker.internal)" as net {
+  interface "9003/tcp\nDBGp" as p9003
 }
 
-' ===================== WIRING =====================
-
-dockerTcp ..> xtcp
-fpm       ..> php     : request handlers
-xtcp      ..> xdebug  : DBGp commands\n(breakpoint_set, step_*, eval, …)
-
-' ===================== SIDE PATHS =====================
-
-package "Optional / manual" {
-  component "HTTP control API\ncurl http://127.0.0.1:9010/{bp,run,…}\n(--http flag)" as http <<host>>
-  component "docker compose exec\nphp-sub-api xdebug {0|1}" as xdbgctl <<host>>
+' =================== CONTAINER ===================
+package "Container: php-sub-api"  {
+  rectangle "php-fpm / FastCGI\n(web entrypoint)" as phpfpm {
+    port "FastCGI\n:9000" as p_fpm
+  }
+  rectangle "Xdebug (DBGp engine)\nxdebug.start_with_request=yes\nxdebug.client_host=host.docker.internal" as xdebug {
+    port "DBGp dial-out\n-> host:9003" as p_dial
+    port "DBGp commands\n(breakpoint_set, step_*, eval, …)" as p_cmd
+  }
+  rectangle "PHP app\n(Symfony controllers,\nconsole commands)" as app
 }
 
-xdbg     ..> http    : serves on \n127.0.0.1:9010
-xdbgctl  ..> xdebug  : enable / disable\nXdebug at runtime
+' =================== WIRING: control plane ===================
+client --> io_stdio : "tools/call\ndocker_xdebug_*"
+io_stdio --> m_mcp
+
+' =================== WIRING: data plane (HTTP request flow) ===================
+m_req --> io_listen : "1 open listener\n(per session)"
+io_listen --> p9003 : "2 accept\n(one connection)"
+p9003 --> p_dial : "Xdebug dials out\non request/command start"
+p_dial --> p_cmd : "3 DBGp session"
+
+' =================== WIRING: command flow into container ===================
+m_sess --> io_listen : "send DBGp commands\n(breakpoint_set, step, eval)"
+io_listen --> p_cmd : "4 commands flow back\nover the same TCP conn"
+
+' =================== WIRING: the actual HTTP request being debugged ===================
+m_req --> p_fpm : "5 fire HTTP request\n(method/headers/body)\nvia http.DefaultClient"
+p_fpm --> app : "6 php-fpm runs script\nXdebug hooks fire\n-> dial-out to :9003"
+
+' =================== WIRING: CLI command flow ===================
+rectangle "docker compose exec\n(--container-exec prefix)" as exec
+m_sess --> exec : "7 docker_xdebug_run_command\nruns command in container"
+exec --> app : "8 php bin/console …\nXdebug hooks fire\n-> dial-out to :9003"
+
+' =================== WIRING: side channels ===================
+io_http --> m_sess : "curl control API\n(standalone mode)"
+lsof --> io_listen : "probe :9003 before bind\n(wait if busy, report holder)"
+
+' =================== WIRING: container Xdebug on/off ===================
+rectangle "xdebug {0|1}\n(--xdebug-enable-cmd /\n--xdebug-disable-cmd)" as xonoff
+xonoff --> xdebug : "enable/disable engine\nat runtime"
+
+' =================== LEGEND ===================
+legend right
+  |= line |= meaning |
+  | ──> | control / command |
+  | ──> (numbered) | request-flow step |
+  | ──> | data / DBGp |
+endlegend
 
 @enduml
