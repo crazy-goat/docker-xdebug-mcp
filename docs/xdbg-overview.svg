@@ -146,19 +146,19 @@
        Each path: M start  H midX1  V y-target  H target
        ========================================================= -->
 
-  <!-- dbgp → php-fpm (fire HTTP) — routed on the right (midX=820) -->
+  <!-- dbgp → php-fpm (fire HTTP) — routed on the right (midX=820), label above the final horizontal -->
   <path d="M 400 450 H 820 V 205 H 935" fill="none"
         stroke="#3B7DD8" stroke-width="1.5"
         stroke-dasharray="6,4" marker-end="url(#arrow-dashed)"/>
-  <text x="822" y="445" text-anchor="middle" font-size="11" fill="#0D47A1" font-weight="600">fire HTTP request</text>
-  <text x="822" y="459" text-anchor="middle" font-size="10" fill="#0D47A1">(method / headers / body)</text>
+  <text x="880" y="196" text-anchor="middle" font-size="11" fill="#0D47A1" font-weight="600">fire HTTP request</text>
+  <text x="880" y="184" text-anchor="middle" font-size="10" fill="#0D47A1">(method / headers / body)</text>
 
   <!-- dbgp → PHP app (run_command) — routed LEFT to avoid crossing with fpm path -->
   <path d="M 400 400 H 580 V 165 H 1135" fill="none"
         stroke="#3B7DD8" stroke-width="1.5"
         stroke-dasharray="6,4" marker-end="url(#arrow-dashed)"/>
-  <text x="580" y="385" text-anchor="end" font-size="11" fill="#0D47A1" font-weight="600">run_command</text>
-  <text x="580" y="399" text-anchor="end" font-size="10" fill="#0D47A1">(docker compose exec)</text>
+  <text x="540" y="394" text-anchor="end" font-size="11" fill="#0D47A1" font-weight="600">run_command</text>
+  <text x="540" y="408" text-anchor="end" font-size="10" fill="#0D47A1">(docker compose exec)</text>
 
   <!-- listener ↔ xdebug (DBGp :9003) — main bridge (orthogonal, now aligned horizontally) -->
   <!-- listener ↔ xdebug (DBGp :9003) — two horizontal arrows with wide spacing -->
