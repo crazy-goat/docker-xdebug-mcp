@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1340 800" font-family="-apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="13" fill="#1A1A1A">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1340 790" font-family="-apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="13" fill="#1A1A1A">
   <defs>
     <marker id="arrow-solid" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
       <path d="M0,0 L10,5 L0,10 z" fill="#37474F"/>
@@ -126,7 +126,7 @@
 
   <!-- dbgp → listener (open :9003) -->
   <line x1="315" y1="540" x2="240" y2="605" stroke="#37474F" stroke-width="1.2" marker-end="url(#arrow-solid)"/>
-  <text x="500" y="595" font-size="11" fill="#263238" font-weight="600">opens :9003</text>
+  <text x="345" y="555" font-size="11" fill="#263238" font-weight="600">opens :9003</text>
 
   <!-- =========================================================
        WITHIN-CONTAINER arrows (solid)
@@ -161,21 +161,22 @@
   <text x="822" y="399" text-anchor="middle" font-size="10" fill="#0D47A1">(docker compose exec)</text>
 
   <!-- listener ↔ xdebug (DBGp :9003) — main bridge (orthogonal, now aligned horizontally) -->
-  <!-- ① Xdebug initiates — straight LEFT to listener, almost a single line -->
+  <!-- listener ↔ xdebug (DBGp :9003) — two horizontal arrows with wide spacing -->
+  <!-- ① Xdebug → listener (init) — line at y=655, label ABOVE -->
   <path d="M 970 655 H 425" fill="none"
         stroke="#3B7DD8" stroke-width="1.8"
         stroke-dasharray="6,4" marker-end="url(#arrow-dashed)"/>
-  <text x="697" y="640" text-anchor="middle" font-size="12" fill="#0D47A1" font-weight="700">① DBGp over TCP :9003 — init</text>
-  <text x="697" y="676" text-anchor="middle" font-size="10" fill="#0D47A1">Xdebug dials host.docker.internal:9003</text>
-  <text x="697" y="690" text-anchor="middle" font-size="10" fill="#0D47A1">on every request / console command</text>
+  <text x="697" y="593" text-anchor="middle" font-size="12" fill="#0D47A1" font-weight="700">① DBGp over TCP :9003 — init</text>
+  <text x="697" y="607" text-anchor="middle" font-size="10" fill="#0D47A1">Xdebug dials host.docker.internal:9003</text>
+  <text x="697" y="621" text-anchor="middle" font-size="10" fill="#0D47A1">on every request / console command</text>
 
-  <!-- ② listener → xdebug (response tunnel) — drawn slightly below -->
-  <path d="M 425 678 H 970" fill="none"
+  <!-- ② listener → Xdebug (response tunnel) — line 30px below at y=685, label BELOW -->
+  <path d="M 425 685 H 970" fill="none"
         stroke="#3B7DD8" stroke-width="1.8"
         stroke-dasharray="6,4" marker-end="url(#arrow-dashed)"/>
-  <text x="697" y="724" text-anchor="middle" font-size="12" fill="#0D47A1" font-weight="700">② session commands (response tunnel)</text>
-  <text x="697" y="738" text-anchor="middle" font-size="10" fill="#0D47A1">xdbg → Xdebug: breakpoint_set, step,</text>
-  <text x="697" y="752" text-anchor="middle" font-size="10" fill="#0D47A1">eval, run, continue (over the same TCP :9003)</text>
+  <text x="697" y="722" text-anchor="middle" font-size="12" fill="#0D47A1" font-weight="700">② session commands (response tunnel)</text>
+  <text x="697" y="736" text-anchor="middle" font-size="10" fill="#0D47A1">xdbg → Xdebug: breakpoint_set, step,</text>
+  <text x="697" y="750" text-anchor="middle" font-size="10" fill="#0D47A1">eval, run, continue (over the same TCP :9003)</text>
 
   <!-- legend (bottom of host cluster) -->
   <g transform="translate(60, 710)">
