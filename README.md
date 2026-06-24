@@ -331,16 +331,24 @@ shell access.
 
 **Web (POST/GET/…)** — the tool fires the request itself:
 
-1. `xdbg_set_breakpoint` `{file:"src/.../FooController.php", line:42}`
-2. `xdbg_request` `{url:"http://127.0.0.1:8090/api/foo", method:"POST", headers:{"Content-Type":"application/json","Authorization":"Bearer …"}, body:"{…}"}` → breaks at `FooController:42`
-3. `xdbg_stack` / `_context` / `_eval` / `_step_*` / `_run`
+1. `xdbg_container_status` — check Xdebug is enabled in the container
+2. `xdbg_container_enable` — turn it on if it's off
+3. `xdbg_set_breakpoint` `{file:"src/.../FooController.php", line:42}`
+4. `xdbg_request` `{url:"http://127.0.0.1:8090/api/foo", method:"POST", headers:{"Content-Type":"application/json","Authorization":"Bearer …"}, body:"{…}"}` → breaks at `FooController:42`
+5. `xdbg_stack` / `_context` / `_eval` / `_step_*` / `_run` — inspect and step
+6. `xdbg_detach` or `xdbg_stop` — end the session and free port 9003
+7. `xdbg_container_disable` — turn Xdebug off (restore container performance)
 
 **CLI / Symfony command:**
 
-1. `xdbg_set_breakpoint` …
-2. `xdbg_listen` (arms; returns when the engine connects)
-3. launch separately: `docker compose exec -T php php bin/console app:cmd`
-4. drive with `_run` / `_step_*` / `_stack` / `_context` / `_eval`
+1. `xdbg_container_status` — check Xdebug is enabled in the container
+2. `xdbg_container_enable` — turn it on if it's off
+3. `xdbg_set_breakpoint` …
+4. `xdbg_listen` (arms; returns when the engine connects)
+5. launch separately: `docker compose exec -T php php bin/console app:cmd`
+6. drive with `_run` / `_step_*` / `_stack` / `_context` / `_eval`
+7. `xdbg_detach` or `xdbg_stop` — end the session and free port 9003
+8. `xdbg_container_disable` — turn Xdebug off (restore container performance)
 
 ## Files
 
