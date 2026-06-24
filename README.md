@@ -24,6 +24,10 @@ it dials out to `host.docker.internal:9003` on every request and waits for
 commands. `xdbg` listens there (IPv4 `0.0.0.0:9003`) and drives it. The MCP
 server is one long-lived process, so it holds the session across tool calls.
 
+![architecture](docs/docker-xdebug-mcp-architecture.svg)
+
+([source](docs/architecture.puml) — edit with PlantUML)
+
 ## Build & register
 
 ```bash

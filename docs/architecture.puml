@@ -1,0 +1,76 @@
+@startuml docker-xdebug-mcp-architecture
+
+skinparam backgroundColor #FAFAFA
+skinparam componentStyle rectangle
+skinparam component {
+  BackgroundColor<<host>>       #E3F2FD
+  BackgroundColor<<container>>  #FFF3E0
+  BackgroundColor<<mcp>>        #F3E5F5
+  BorderColor                   #455A64
+  FontSize                      13
+}
+skinparam interface {
+  BackgroundColor               #ECEFF1
+  BorderColor                   #455A64
+}
+skinparam ArrowColor #455A64
+skinparam defaultFontName "Helvetica"
+
+title docker-xdebug-mcp — component architecture
+
+' ===================== HOST =====================
+
+package "Host (macOS / Linux)" <<host>> {
+  actor "MCP client\n(Claude Code, etc.)" as client
+
+  component "xdbg (Go binary)\nMCP stdio server\n— JSON-RPC over stdin/stdout" as xdbg <<host>>
+
+  component "DBGp listener\n0.0.0.0:9003\n(ephemeral, one conn at a time)" as listener <<host>>
+
+  interface "stdio"   as stdio
+  interface "TCP/9003" as tcp
+
+  client   -- stdio
+  stdio    -- xdbg
+  xdbg     ..> listener  : open / close\n(per debug session)
+  listener -- tcp
+}
+
+' ===================== NETWORK =====================
+
+package "Docker network" {
+  interface "host.docker.internal:9003" as dockerTcp
+  tcp <..> dockerTcp : Xdebug dials out\n(xdebug.start_with_request=yes)
+}
+
+' ===================== CONTAINER =====================
+
+package "Container (php-sub-api)" <<container>> {
+  component "Web server / php-fpm\n(index.php, controller, …)" as php <<container>>
+
+  component "Xdebug\n(DBGp engine)" as xdebug <<container>>
+
+  interface "FastCGI / FPM" as fpm
+  interface "TCP/9003 (DBGp)" as xtcp
+
+  php   -- fpm
+  xdebug -- xtcp
+}
+
+' ===================== WIRING =====================
+
+dockerTcp ..> xtcp
+fpm       ..> php     : request handlers
+xtcp      ..> xdebug  : DBGp commands\n(breakpoint_set, step_*, eval, …)
+
+' ===================== SIDE PATHS =====================
+
+package "Optional / manual" {
+  component "HTTP control API\ncurl http://127.0.0.1:9010/{bp,run,…}\n(--http flag)" as http <<host>>
+  component "docker compose exec\nphp-sub-api xdebug {0|1}" as xdbgctl <<host>>
+}
+
+xdbg     ..> http    : serves on \n127.0.0.1:9010
+xdbgctl  ..> xdebug  : enable / disable\nXdebug at runtime
+
+@enduml
