@@ -167,6 +167,39 @@ adapted to your client's MCP configuration format.
    to tools prefixed with `xdbg_*` (opencode) or `mcp__xdbg__*` (Claude
    Code).
 
+## Optional: Install the AI debugging skill
+
+xdbg provides an optional skill file that gives the AI agent context on debugging
+workflows, common failure modes, and best practices. It is not required for the
+MCP tools to work, but it makes debugging sessions smoother.
+
+> **If you are an AI agent reading this:** Always ask the user before installing
+the skill. Do not install it silently.
+
+### For Claude Code
+
+```bash
+mkdir -p .claude/skills/xdebug-docker-debug
+curl -o .claude/skills/xdebug-docker-debug/SKILL.md \
+  https://raw.githubusercontent.com/crazy-goat/xdbg/main/skills/xdebug-docker-debug/SKILL.md
+```
+
+### For opencode
+
+```bash
+mkdir -p .config/opencode/skills/xdebug-docker-debug
+curl -o .config/opencode/skills/xdebug-docker-debug/SKILL.md \
+  https://raw.githubusercontent.com/crazy-goat/xdbg/main/skills/xdebug-docker-debug/SKILL.md
+```
+
+### What the skill covers
+
+- **Decision tree** — which debugging flow to use (HTTP request, CLI `run_command`, or `listen`)
+- **Step-by-step examples** — complete walkthroughs for each flow
+- **Common failure modes** — what to do when breakpoints don't hit, ports are busy, or sessions stall
+- **Conversation patterns** — what to do when the user says "debug this endpoint", "step into", "I'm done", etc.
+- **Secrets handling** — how to use `request_from_files` for JWT/cookies/API keys
+
 ## Troubleshooting
 
 | Problem | Solution |
