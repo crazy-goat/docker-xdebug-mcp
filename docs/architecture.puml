@@ -1,109 +1,70 @@
 @startuml xdbg-architecture
 
-' ---- technical component diagram with ports, protocols, numbered flow ----
+left to right direction
 
 skinparam backgroundColor #FFFFFF
 skinparam shadowing false
 skinparam defaultFontName "Helvetica"
-skinparam defaultFontSize 12
-skinparam roundCorner 6
+skinparam defaultFontSize 13
+skinparam roundCorner 8
 skinparam ArrowColor #37474F
 skinparam ArrowFontColor #263238
 skinparam package {
   BorderColor #607D8B
   FontStyle bold
+  BackgroundColor #FAFAFA
 }
 skinparam rectangle {
-  BackgroundColor #ECEFF1
-  BorderColor #455A64
+  BackgroundColor #E3F2FD
+  BorderColor #1565C0
 }
 skinparam database {
+  BackgroundColor #FFF3E0
+  BorderColor #E65100
+}
+skinparam interface {
   BackgroundColor #ECEFF1
   BorderColor #455A64
 }
-skinparam interface {
-  BackgroundColor #CFD8DC
-  BorderColor #455A64
-}
-skinparam port {
-  BackgroundColor #CFD8DC
-  BorderColor #455A64
-}
 
-title xdbg — component & protocol architecture
+title xdbg — how it connects the AI agent to PHP in Docker
 
-' =================== HOST ===================
-package "Host (developer machine)"  {
-  actor "MCP client\n(Claude Code / Cursor)" as client
-
-  rectangle "xdbg (Go binary)" as xdbg {
-    port "stdin/stdout\nJSON-RPC 2.0\n(MCP stdio)" as io_stdio
-    port "TCP :9003\nDBGp listener\n0.0.0.0 (ephemeral)" as io_listen
-    rectangle "mcp.go\nJSON-RPC dispatch" as m_mcp
-    rectangle "session.go\nDBGp state machine\n(adopt / step / eval)" as m_sess
-    rectangle "httpreq.go\nrequest firing" as m_req
-    rectangle "dbgp.go\nwire framing\nXML + base64" as m_dbgp
-    m_mcp --> m_sess
-    m_req --> m_sess
-    m_sess --> m_dbgp
-  }
-
-  rectangle "lsof probe\n(detect port 9003 holder)" as lsof
+' =================== LEFT: MCP client ===================
+package "MCP client" {
+  actor "Claude Code\n/ opencode / Cursor" as client
 }
 
-' =================== NETWORK BOUNDARY ===================
-cloud "Docker network\n(host.docker.internal)" as net {
-  interface "9003/tcp\nDBGp" as p9003
+' =================== MIDDLE: xdbg ===================
+package "Host — xdbg (Go binary, MCP stdio server)" {
+  rectangle "MCP stdio\nJSON-RPC over\nstdin/stdout" as io
+  rectangle "xdbg core\nDBGp state machine\n(breakpoints, step, eval,\npath translation)" as core
+  rectangle "DBGp listener\n0.0.0.0:9003\n(one connection per session)" as listener
+  io -[hidden]right-> core
+  core -[hidden]right-> listener
 }
 
-' =================== CONTAINER ===================
-package "Container: php-sub-api"  {
-  rectangle "php-fpm / FastCGI\n(web entrypoint)" as phpfpm {
-    port "FastCGI\n:9000" as p_fpm
-  }
-  rectangle "Xdebug (DBGp engine)\nxdebug.start_with_request=yes\nxdebug.client_host=host.docker.internal" as xdebug {
-    port "DBGp dial-out\n-> host:9003" as p_dial
-    port "DBGp commands\n(breakpoint_set, step_*, eval, …)" as p_cmd
-  }
-  rectangle "PHP app\n(Symfony controllers,\nconsole commands)" as app
+' =================== RIGHT: Container ===================
+package "Container (PHP app)" {
+  rectangle "php-fpm\nweb entrypoint" as fpm
+  rectangle "Xdebug engine\nstart_with_request=yes\nclient_host=host.docker.internal" as engine
+  rectangle "PHP app\ncontrollers, console commands" as app
+  fpm -[hidden]right-> app
+  engine -[hidden]down-> app
 }
 
-' =================== WIRING: control plane ===================
-client --> io_stdio : "tools/call\ndocker_xdebug_*"
-io_stdio --> m_mcp
+' =================== FLOWS ===================
+client --> io : "1  tools/call  xdbg_*"
+io --> core : "2  dispatch"
+core --> listener : "3  open :9003"
+listener --> engine : "4  Xdebug dials out\n    on request/command"
+core --> engine : "5  DBGp commands\n    breakpoint_set, step, eval"
+core --> fpm : "6  fire HTTP request\n    (method/headers/body)"
+core --> app : "7  run_command\n    (docker compose exec)"
+fpm --> app : "8  execute script"
+app --> engine : "9  Xdebug hooks fire"
 
-' =================== WIRING: data plane (HTTP request flow) ===================
-m_req --> io_listen : "1 open listener\n(per session)"
-io_listen --> p9003 : "2 accept\n(one connection)"
-p9003 --> p_dial : "Xdebug dials out\non request/command start"
-p_dial --> p_cmd : "3 DBGp session"
-
-' =================== WIRING: command flow into container ===================
-m_sess --> io_listen : "send DBGp commands\n(breakpoint_set, step, eval)"
-io_listen --> p_cmd : "4 commands flow back\nover the same TCP conn"
-
-' =================== WIRING: the actual HTTP request being debugged ===================
-m_req --> p_fpm : "5 fire HTTP request\n(method/headers/body)\nvia http.DefaultClient"
-p_fpm --> app : "6 php-fpm runs script\nXdebug hooks fire\n-> dial-out to :9003"
-
-' =================== WIRING: CLI command flow ===================
-rectangle "docker compose exec\n(--container-exec prefix)" as exec
-m_sess --> exec : "7 docker_xdebug_run_command\nruns command in container"
-exec --> app : "8 php bin/console …\nXdebug hooks fire\n-> dial-out to :9003"
-
-' =================== WIRING: side channels ===================
-lsof --> io_listen : "probe :9003 before bind\n(wait if busy, report holder)"
-
-' =================== WIRING: container Xdebug on/off ===================
-rectangle "xdebug {0|1}\n(--xdebug-enable-cmd /\n--xdebug-disable-cmd)" as xonoff
-xonoff --> xdebug : "enable/disable engine\nat runtime"
-
-' =================== LEGEND ===================
-legend right
-  |= line |= meaning |
-  | ──> | control / command |
-  | ──> (numbered) | request-flow step |
-  | ──> | data / DBGp |
-endlegend
+' =================== SIDE: Xdebug on/off ===================
+rectangle "xdbg_container_enable / _disable\n(--xdebug-*-cmd)" as toggle
+toggle --> engine : "turn on/off at runtime"
 
 @enduml
