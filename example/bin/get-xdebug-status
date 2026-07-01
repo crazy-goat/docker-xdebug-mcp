@@ -1,0 +1,9 @@
+#!/bin/sh
+DIR="$(cd "$(dirname "$0")/.." && pwd)"
+cd "$DIR" || exit 1
+docker compose exec -T php php -r '
+$mode = ini_get("xdebug.mode");
+echo "xdebug.mode: " . ($mode ?: "not set") . "\n";
+echo "xdebug.client_host: " . ini_get("xdebug.client_host") . "\n";
+echo "xdebug.client_port: " . ini_get("xdebug.client_port") . "\n";
+'

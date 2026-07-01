@@ -1,0 +1,5 @@
+#!/bin/sh
+mode=$(sed -n 's/^xdebug\.mode=\(.*\)/\1/p' /etc/php83/conf.d/xdebug.ini)
+echo "xdebug.mode: ${mode:-not set}"
+echo "xdebug.client_host: $(sed -n 's/^xdebug\.client_host=\(.*\)/\1/p' /etc/php83/conf.d/xdebug.ini)"
+echo "xdebug.client_port: $(sed -n 's/^xdebug\.client_port=\(.*\)/\1/p' /etc/php83/conf.d/xdebug.ini)"

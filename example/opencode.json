@@ -1,0 +1,18 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "xdbg": {
+      "enabled": true,
+      "type": "local",
+      "command": [
+        "xdbg", "mcp",
+        "--dbg-port", "9003",
+        "--docker-root", "/var/www/html",
+        "--xdebug-enable-cmd",  "xdebug-on",
+        "--xdebug-disable-cmd", "xdebug-off",
+        "--xdebug-status-cmd",  "xdebug-status",
+        "--container-exec",      "docker compose exec -T php"
+      ]
+    }
+  }
+}

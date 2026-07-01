@@ -1,0 +1,5 @@
+#!/bin/sh
+set -e
+sed -i 's/xdebug.mode=debug/xdebug.mode=off/' /etc/php83/conf.d/xdebug.ini
+kill -USR2 1
+echo "Xdebug disabled, FPM reloaded"
