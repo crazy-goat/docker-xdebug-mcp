@@ -9,6 +9,8 @@ any MCP-aware agent, and the agent debugs it for you: sets the breakpoint,
 fires the real request, reads the stack, inspects variables, steps, evals,
 proposes a fix. That's xdbg.
 
+[![demo](docs/example-preview.png)](docs/example.mp4)
+
 **xdbg is an MCP server that connects to Xdebug running in a Docker container
 and exposes it as tools** — so any AI agent that speaks MCP (Claude Code,
 opencode, Cursor) can fire HTTP requests (`curl`-style) and run CLI commands
